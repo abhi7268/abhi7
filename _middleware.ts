@@ -24,26 +24,31 @@ export async function middleware(req: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
-
   const pathname = req.nextUrl.pathname
 
+  // 1. In pages ko bina login ke access nahi kiya ja sakta
   const isProtected =
+    pathname.startsWith('/dashboard') || // ✅ Added dashboard to protection
     pathname.startsWith('/settings') ||
     pathname.startsWith('/problems') ||
     pathname.startsWith('/mentor') ||
     pathname.startsWith('/streak')
 
+  // 2. Agar user logged in nahi hai aur protected page par hai -> Login par bhejo
   if (isProtected && !user) {
     return NextResponse.redirect(new URL('/login', req.url))
   }
 
-  if (pathname === '/login' && user) {
-    return NextResponse.redirect(new URL('/', req.url))
+  // 3. Agar user logged in hai aur login page ya home page par hai -> Dashboard bhejo
+  // Isse 404 error (Home page wala) nahi aayega
+  if ((pathname === '/login' || pathname === '/') && user) {
+    return NextResponse.redirect(new URL('/dashboard', req.url))
   }
 
   return res
 }
 
 export const config = {
+  // Static files aur images ko ignore karein
   matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 }
